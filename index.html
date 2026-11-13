@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#171A1F">
+<meta name="theme-color" content="#12161B">
 <link rel="manifest" href="manifest.json"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Bosman"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <title>Bosman-Clothing</title>
 <style>
 /* ===== COLOURS: edit here ===== */
-:root{--brand:#8FC9D5;--brand-rgb:143,201,213;--on-brand:#0D1114;--bg:#171A1F;--muted:#818892;--card:#20252C;--text:#E8ECEF;--line:#2E353D;--red:#e5736b}
-@media(prefers-color-scheme:light){:root{--bg:#EEF2F4;--card:#fff;--text:#16202A;--line:#D5DDE2;--brand:#2A7F8E;--on-brand:#fff;--muted:#5d6b76}}
+:root{--brand:#8FC9D5;--brand-rgb:143,201,213;--on-brand:#0D1114;--bg:#12161B;--muted:#8a94a0;--card:#1A1F25;--text:#E8ECEF;--line:#2E353D;--red:#e5736b}
+
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px system-ui,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
 header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}header img{width:36px;height:36px;border-radius:8px}
 .hb{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}.hb button,header>button{min-height:40px;padding:0 12px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;font-size:15px}
@@ -23,6 +23,9 @@ details{background:var(--card);border:1px solid var(--line);border-radius:12px;p
 .mr{display:grid;grid-template-columns:90px repeat(5,1fr);gap:4px;align-items:center}.mr input{padding:4px;margin:2px 0;min-height:40px;text-align:center}.mr label{font-size:13px}
 .th{position:relative;display:inline-block;margin:4px}.th img{width:80px;height:80px;object-fit:cover;border-radius:8px}.th b{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:26px;height:26px;text-align:center;line-height:26px}label.btn{text-align:center;line-height:48px;color:var(--on-brand);font-size:17px}
 .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.cal button{min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:8px}.cal .on{background:var(--brand);color:var(--on-brand)}
+.ttl{font-family:Georgia,'Times New Roman',serif;font-size:22px}.hb .pri{background:var(--brand);color:var(--on-brand);border:0;font-weight:600}.sec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:12px 0}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.row>button{flex:1;min-width:130px}.btn2{min-height:46px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--text);font-size:15px}.rowl{display:flex;justify-content:space-between;align-items:center;margin:8px 0}.bv{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;min-height:36px;padding:0 12px;font-size:14px}.rt{position:absolute;right:12px;top:12px;display:flex;gap:6px;align-items:center}.bg{border:1px solid var(--line);border-radius:14px;padding:2px 10px;font-size:13px;color:var(--muted)}.sec h3{margin:12px 0 6px}
+.bk{display:none;background:var(--brand);color:var(--on-brand);padding:10px 14px;font-size:15px}
+.alert{background:#b3261e;color:#fff;border-radius:14px;padding:12px;margin:10px 0;animation:bl 1s infinite}.alert .card{color:var(--text)}@keyframes bl{50%{opacity:.5;box-shadow:0 0 0 5px rgba(229,115,107,.55)}}
 #toast{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));background:var(--brand);color:var(--on-brand);padding:12px;border-radius:12px;display:none;z-index:9}
 </style></head><body>
 <div id="app"></div><div id="toast"></div>
@@ -50,7 +53,7 @@ let auth,db,me,cache=[],Q='',F='All',cur,dip;
 try{firebase.initializeApp(firebaseConfig);auth=firebase.auth();db=firebase.firestore()}catch(e){}
 
 /* ===== LOCAL STORAGE (IndexedDB) ===== */
-const DB=new Promise((res,rej)=>{const r=indexedDB.open('bosman_pouch',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('clients'))d.createObjectStore('clients',{keyPath:'id'});if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)});
+const DB=new Promise((res,rej)=>{const r=indexedDB.open('bosman_pouch',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('clients'))d.createObjectStore('clients',{keyPath:'id'});if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>toast('Close other open copies of this app, then reopen it')});
 const all=async()=>{const d=await DB;return new Promise(r=>{const q=d.transaction('clients').objectStore('clients').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>r([])})};
 const put=async c=>{const d=await DB;return new Promise(r=>{const t=d.transaction('clients','readwrite');t.objectStore('clients').put(c);t.oncomplete=r;t.onerror=r})};
 
@@ -79,7 +82,8 @@ async function login(){const e=$('#le').value.trim().toLowerCase(),p=$('#lp').va
  catch(x){if(x.code==='auth/network-request-failed'||!navigator.onLine){let cr=null;try{cr=JSON.parse(localStorage.bos_cred)}catch(_){}
    if(cr&&cr.me.email===e&&cr.h===await hash(e,p)){me=cr.me;localStorage.removeItem('bos_locked');return start()}
    return say('Offline: sign in online once first, or check your details.')}
-  say(/invalid|wrong|user-not-found/.test(x.code||'')?'Wrong email or password.':x.message)}}
+  if(/invalid|user-not-found/.test(x.code||'')&&(e===CFG.admin||e===CFG.owner)&&confirm('No account found for this email, or the password is different. If this is your first time, create the account now with the password you typed?')){try{await auth.createUserWithEmailAndPassword(e,p);return login()}catch(y){return say(y.code==='auth/email-already-in-use'?'That account exists, so the password is wrong. Tap Forgot password.':y.message)}}
+ say(/invalid|wrong|user-not-found/.test(x.code||'')?'Wrong email or password (or this account is not created yet).':x.message)}}
 async function forgot(){const e=$('#le').value.trim();if(!e)return say('Type your email first.');try{await auth.sendPasswordResetEmail(e);say('Reset email sent.')}catch(x){say(x.message)}}
 async function changePw(forced,cur0){const c=cur0||prompt('Current password');if(!c)return;const n=prompt(forced?'Create your permanent password (min 6 characters)':'New password (min 6 characters)');
  if(!n||n.length<6)return toast('Password not changed');
@@ -90,19 +94,22 @@ function lock(){localStorage.bos_locked=1;me=null;loginView()}
 /* ===== HOME ===== */
 async function start(){cache=await all();home();sync();loadTasks()}
 function due(c){if(!c.due||c.status==='Completed'||c.status==='Delivered')return'';const d=(new Date(c.due)-new Date().setHours(0,0,0,0))/864e5;return d<0?'over':d<=3?'soon':''}
-function home(){shell(`<header><img src="${LOGO}" alt=""><b>${CFG.brand}</b><span id="st" class="muted"></span>
-<div class="hb"><button onclick="sync(true)">Sync</button>${adm()?'<button onclick="adminView()">Admin</button><button onclick="exportCsv()">CSV</button><button onclick="financeView()">Finance</button><button onclick="junkView()">Junk</button><button onclick="backup()">Backup</button><button onclick="restore()">Restore</button>':''}<button onclick="changePw()">Password</button><button onclick="lock()">Lock</button></div></header>
-<main><div class="hb" style="margin:0 0 8px"><button onclick="tasksView()">Tasks</button>${adm()?'<button onclick="importF()">Import</button><button onclick="exportXlsx()">Excel</button><button onclick="driveView()">Drive</button>':''}</div>${adm()?'<div id="tot" class="tot"></div><div id="bday"></div>':''}<div id="instbox"></div>
+function home(){shell(`<div id="bk" class="bk"></div><header><img src="${LOGO}" alt=""><div><b class="ttl">Tailor's Pouch</b><br><small>${CFG.brand}</small></div><div class="hb"><button class="pri" onclick="clientForm()">+ New</button></div></header>
+<main>${adm()?'<div id="apr"></div><div id="tot" class="sec tot"></div><div id="bday"></div>':''}
+<div class="rowl"><span id="st" class="muted"></span><button class="bv" onclick="sync(true)">Sync now</button></div><div id="instbox"></div>
 <input id="q" name="bos-find" autocomplete="off" placeholder="Search name, ID, style, fabric, notes…"><div id="fl" class="fl"></div><div id="list"></div>
-<button class="btn" onclick="form()">+ Add client</button><button class="lnk" onclick="upd()">Check for update</button></main>`);
- $('#q').oninput=e=>{Q=e.target.value;list()};list();upInst();setTimeout(()=>list(),500)}
-function list(){if(!$('#list'))return;let q=Q.trim().toLowerCase();if(q===me.email){q='';$('#q').value=Q=''}
+${adm()?`<div class="sec"><b>Admin</b><div class="row"><button class="btn" onclick="adminView()">Admin panel (staff)</button><button class="btn2" onclick="exportCsv()">Send all client data</button></div></div>`:''}
+${adm()?'':'<div class="sec"><b>Staff corner: customers updated by me</b><div id="mine"></div></div>'}<div id="tm" class="sec">Loading tasks…</div>
+${adm()?`<div class="sec"><b>Finance</b><div class="row"><button class="btn" onclick="financeView()">Finance records</button><button class="btn2" onclick="financeView()">Daily / weekly / monthly / annual report</button></div></div><div class="sec"><b>Export</b><div class="row"><button class="btn2" onclick="exportCsv()">CSV</button><button class="btn2" onclick="exportXlsx()">Excel</button><button class="btn2" onclick="backup()">Full backup</button><button class="btn2" onclick="restore()">Restore</button><button class="btn2" onclick="importF()">Import CSV/Excel</button><button class="btn2" onclick="visitReport()">Visit report</button><button class="btn2" onclick="junkView()">Junk basket</button><button class="btn2" onclick="window.print()">PDF / Print</button></div></div><div class="sec"><b>Google Drive (backup)</b><div class="row"><button class="btn" onclick="driveView()">Drive accounts and backup</button></div></div>`:''}
+<div class="sec"><b>Account</b><div class="row">${adm()?'':'<button class="btn2" onclick="backup()">Backup my data</button>'}<button class="btn2" onclick="changePw()">Change password</button><button class="btn2" onclick="lock()">Lock</button><button class="btn2" onclick="upd()">Check for update</button></div></div></main>`);
+ $('#q').oninput=e=>{Q=e.target.value;list()};list();upInst();tasksView();setTimeout(list,500);bkBanner();pullBk();loadApr()}
+function list(){if(!$('#list'))return;mineList();let q=Q.trim().toLowerCase();if(q===me.email){q='';$('#q').value=Q=''}
  const live=cache.filter(c=>!c.deleted),f=(FL.find(x=>x[0]===F)||FL[0])[1];
  $('#fl').innerHTML=FL.map(([n,fn])=>`<button class="${n===F?'on':''}" onclick="F='${n}';list()">${n}${adm()?' ('+live.filter(fn).length+')':''}</button>`).join('');
  if(adm())$('#tot').innerHTML=`<div><b>${live.length}</b>Clients</div><div><b>${live.filter(c=>c.status==='In progress').length}</b>In progress</div><div><b>${live.filter(c=>due(c)==='soon').length}</b>Due soon</div>`;
  if(adm()){const t=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(5,10);$('#bday').innerHTML=live.filter(c=>(c.dob||'').slice(5)===t).map(c=>`<div class="card">🎂 ${esc(c.name)}'s birthday today <button class="lnk" onclick="bw('${esc(c.id)}')">WhatsApp</button></div>`).join('')}const hay=c=>[c.name,c.id,adm()?c.phone:'',c.addr,c.fabric,c.style,c.notes].join(' ').toLowerCase();
  const rows=live.filter(f).filter(c=>!q||hay(c).includes(q)).sort((a,b)=>(b.updated||'').localeCompare(a.updated||''));
- $('#list').innerHTML=rows.map(c=>{const d=due(c);return`<div class="card" onclick="form('${esc(c.id)}')"><b>${esc(c.name)}</b> <small>${esc(c.id)}</small><br><small>${esc(c.style)} · ${esc(c.status)}${c.due?' · due '+esc(c.due):''}</small>${d==='over'?'<span class="tag" style="color:var(--red)">Overdue</span>':d==='soon'?'<span class="tag">Due soon</span>':''}</div>`}).join('')||'<p class="muted">No clients yet.</p>'}
+ $('#list').innerHTML=`<p class="muted">Showing ${rows.length} of ${live.length} clients</p>`+(rows.map(c=>{const d=due(c),b=(+c.total||0)-(+c.deposit||0)-paid(c);return`<div class="card" onclick="clientForm('${esc(c.id)}')"><b>${esc(c.name)}</b> <small style="margin-left:14px">${esc(c.id)}</small><div class="muted">${[adm()?c.phone:'',(c.pieces||0)+' piece(s)',c.fabric].map(esc).join(' · ')}</div><div class="muted">Collect: ${esc(c.due||'—')}${adm()?' · Balance: ₦'+b.toLocaleString():''}</div><div class="muted" style="font-size:13px">Added by ${esc(c.createdBy?.n||'—')} (${esc(c.createdBy?.s||'')}) · Updated by ${esc(c.updatedBy?.n||'—')}</div><div class="rt"><span class="bg" ${d==='over'?'style="color:var(--red);border-color:var(--red)"':''}>${d==='over'?'Overdue':esc(c.status)}</span><button class="bv" onclick="event.stopPropagation();clientForm('${esc(c.id)}');addVisit()">+ Add visit</button></div></div>`}).join('')||'<p class="muted">No clients yet.</p>')}
 
 /* ===== CLIENT FORM ===== */
 function measHTML(t,m){return Object.entries(MS[t]).map(([s,f])=>`<details><summary>${esc(s)}</summary>${f.split(',').map(k=>{const v=m[s+'|'+k]||[];return`<div class="mr"><label>${esc(k)}</label>${[0,1,2,3,4].map(i=>`<input data-m="${esc(s+'|'+k)}" data-i="${i}" value="${esc(v[i]||'')}" inputmode="decimal">`).join('')}</div>`}).join('')}</details>`).join('')}
@@ -117,9 +124,9 @@ async function delPay(i){if(await askPw()){cur.pay[i].del=true;bal()}else toast(
 async function restPay(i){if(await askPw()){cur.pay[i].del=false;bal()}else toast('Wrong password')}
 function receipt(){const c=cur,p=(c.pay||[]).filter(x=>!x.del),pd=paid(c)+(+c.deposit||0),w=window.open('','_blank');if(!w)return toast('Allow pop-ups');
  w.document.write(`<title>Receipt</title><body style="font:16px sans-serif;padding:20px"><h2>${esc(CFG.brand)}</h2><p>${esc(c.name)} (${esc(c.id)})<br>${esc(c.style)}</p><p>Total: ₦${(+c.total||0).toLocaleString()}<br>Deposit: ₦${(+c.deposit||0).toLocaleString()}<br>${p.map(x=>esc(x.date)+' '+esc(x.method)+': ₦'+(+x.amt).toLocaleString()).join('<br>')}</p><b>Balance: ₦${((+c.total||0)-pd).toLocaleString()}</b><script>print()<\/script>`);w.document.close()}
-function form(id){const c=id?cache.find(x=>x.id===id):{type:'Female',status:'In progress',m:{}};cur=c;const A=adm();
+function clientForm(id){const c=id?cache.find(x=>x.id===id):{type:'Female',status:'In progress',m:{}};cur=c;const A=adm();
  const f=(k,l,t='text',x='')=>`<label>${l}</label><input id="f_${k}" type="${t}" value="${esc(c[k])}" ${x}>`;
- shell(`<header><button onclick="home()">← Back</button><b>${esc(c.id||'New client')}</b></header><main>
+ shell(`<header><button onclick="home()">← Back</button><b>${esc(c.id||'New client')}</b></header><main><div id="appr" class="sec" ${A||!c.id?'hidden':''}>Checking approval…</div>
 <label>Client type</label><select id="f_type" onchange="retype()">${['Female','Male'].map(t=>`<option ${c.type===t?'selected':''}>${t}</option>`).join('')}</select>
 ${f('name','Name')}${f('dob','Date of birth','date')}${A?f('phone','Phone','tel')+f('email','Email','email'):''}${f('addr','Address')}${f('pieces','Number of pieces','number')}${f('fabric','Fabric')}${f('due','Collection date','date')}
 ${A?f('total','Total amount','number','oninput="bal()"')+f('deposit','Deposit','number','oninput="bal()"')+'<p>Balance: <b id="bal"></b></p><h3>Payments</h3><div id="pays"></div><select id="pm"><option>Cash</option><option>Transfer</option><option>POS</option><option>Other</option></select><input id="pa" type="number" placeholder="Amount"><input id="pn" placeholder="Note"><button class="btn" onclick="addPay()">Add payment</button>':''}
@@ -127,13 +134,12 @@ ${f('style','Style wanted')}<label>Notes</label><textarea id="f_notes">${esc(c.n
 <label>Status</label><select id="f_status">${STAT.map(s=>`<option ${c.status===s?'selected':''}>${s}</option>`).join('')}</select>
 <h3>Items in this visit</h3><div id="items"></div><button class="btn" onclick="addItem()">Add this as an item</button>${phUI('style','Style photos')}${phUI('done','Finished job photos')}${c.id?'<button class="btn" onclick="addVisit()">Add visit (save this visit, start a new one)</button>':''}${(c.visits||[]).map((v,i)=>`<div class="card ${v.del?'muted':''}">Visit ${v.n} · ${esc(v.date)} <button class="lnk" onclick="showVisit(${i})">View</button><button class="lnk" onclick="editVisit(${i})">Edit</button><button class="lnk" onclick="delVisit(${i})">${v.del?'Restore':'Delete'}</button></div>`).join('')}<h3>Measurements</h3><p class="muted">Tip: measure over a thin shirt, standing naturally. Five boxes let you repeat a reading.</p><div id="meas">${measHTML(c.type,c.m||{})}</div>${(c.hist||[]).length?'<h3>Earlier measurements</h3>':''}${(c.hist||[]).map((x,i)=>`<div class="card"><small>${esc((x.at||'').slice(0,10))}</small> <button class="lnk" onclick="useHist(${i})">Use these measurements</button></div>`).join('')}
 ${c.createdBy?`<p class="muted">Created by ${esc(c.createdBy.n)} (${esc(c.createdBy.s)})<br>Last updated by ${esc(c.updatedBy?.n)} (${esc(c.updatedBy?.s)})</p>`:''}
-<button class="btn" onclick="saveC()">Save</button>${A&&c.id?'<button class="btn" onclick="wa()">WhatsApp client</button><button class="btn" onclick="receipt()">Receipt (print / save PDF)</button><button class="btn" onclick="shareImg()">Share as image</button><button class="btn" onclick="sharePdf()">Share as PDF</button><button class="btn" onclick="emailC()">Email client</button><button class="lnk" onclick="del()">Delete client</button>':''}</main>`);bal();showPh();showItems()}
-async function saveC(del){const c=cur,g=k=>$('#f_'+k)?.value;
+<button class="btn" onclick="saveC()">Save</button>${!A&&c.id?'<button class="lnk" onclick="del()">Delete client (needs admin or owner password)</button>':''}${A&&c.id?'<button class="btn" onclick="wa()">WhatsApp client</button><button class="btn" onclick="receipt()">Receipt (print / save PDF)</button><button class="btn" onclick="shareImg()">Share as image</button><button class="btn" onclick="sharePdf()">Share as PDF</button><button class="btn" onclick="emailC()">Email client</button><button class="lnk" onclick="del()">Delete client</button>':''}</main>`);bal();showPh();showItems();EDITOK=adm()||!c.id;checkAppr()}
+async function saveC(del){if(!adm()&&cur.id&&!EDITOK&&!del)return toast('Request approval to edit first');const c=cur,g=k=>$('#f_'+k)?.value;
  if(!del){['type','name','dob','addr','pieces','fabric','due','style','notes','other','status',...(adm()?['phone','email','total','deposit']:[])].forEach(k=>c[k]=g(k)??'');const nm=collectM();if(c.id&&Object.keys(c.m||{}).length&&JSON.stringify(c.m)!==JSON.stringify(nm)){(c.hist??=[]).unshift({at:c.updated||'',m:c.m});c.hist=c.hist.slice(0,20)}c.m=nm;if(!c.name.trim())return toast('Enter the client name')}
  if(!c.id){const n=cache.reduce((m,x)=>Math.max(m,+(x.id.split('-')[1]||0)),0)+1;c.id=CFG.prefix+'-'+String(n).padStart(4,'0');c.createdBy={n:me.name,s:me.sid}}
  c.updated=new Date().toISOString();c.updatedBy={n:me.name,s:me.sid};
  try{await put(c);cache=await all();toast('Saved');home();sync()}catch(x){toast('Could not save: '+x.message)}}
-function del(){if(confirm('Delete this client? (kept as a deleted record)')){cur.deleted=true;saveC(true)}}
 function bw(id){cur=cache.find(x=>x.id===id);wa(4)}
 function wa(i){const c=cur,b=(+c.total||0)-(+c.deposit||0)-(c.pay||[]).filter(x=>!x.del).reduce((s,x)=>s+(+x.amt||0),0);const T=[`Hello ${c.name}, your outfit is ready for collection.`,`Hello ${c.name}, a gentle reminder: your balance is ₦${b.toLocaleString()}.`,`Hello ${c.name}, please come for a fitting/adjustment.`,`Happy birthday ${c.name}! From all of us at ${CFG.brand}.`];
  i=i||+prompt('1 Outfit ready · 2 Balance reminder · 3 Fitting · 4 Birthday','1');if(!T[i-1])return;
@@ -147,7 +153,7 @@ function exportCsv(){const k=['id','type','name','dob','phone','email','addr','p
 async function adminView(){shell(`<header><button onclick="home()">← Back</button><b>Admin: staff</b></header><main>
 <input id="sn" placeholder="Full name"><label>Date of birth</label><input id="sd" type="date"><input id="se" type="email" placeholder="Email"><input id="sp" placeholder="Temporary password (min 6)">
 <button class="btn" onclick="addStaff()">Create staff</button><h3>Staff</h3><div id="sl">Loading…</div></main>`);
- try{const s=await db.collection('staff').get();$('#sl').innerHTML=s.docs.map(d=>{const x=d.data();return`<div class="card"><b>${esc(x.name)}</b> <small>${esc(x.sid)}</small><br><small>${esc(x.email)}</small>${me.role==='admin'?` <button class="lnk" onclick="hrView('${esc(x.email)}')">HR file</button>`:''}</div>`}).join('')||'No staff yet.'}catch(x){$('#sl').textContent=x.message}}
+ try{const s=await db.collection('staff').get();$('#sl').innerHTML=s.docs.map(d=>{const x=d.data();return`<div class="card"><b>${esc(x.name)}</b> <small>${esc(x.sid)}</small><br><small>${esc(x.email)}</small>${adm()?` <button class="lnk" onclick="hrView('${esc(x.email)}')">HR file</button>`:''}</div>`}).join('')||'No staff yet.'}catch(x){$('#sl').textContent=x.message}}
 async function addStaff(){const n=$('#sn').value.trim(),d=$('#sd').value,e=$('#se').value.trim().toLowerCase(),p=$('#sp').value;if(!n||!e||p.length<6)return toast('Fill name, email and a 6+ character password');
  try{const sec=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebaseConfig,'sec');await sec.auth().createUserWithEmailAndPassword(e,p);await sec.auth().signOut();
   const n0=(await db.collection('staff').get()).size+1;await db.collection('staff').doc(e).set({name:n,dob:d,email:e,sid:'STF-'+String(n0).padStart(3,'0'),tmp:true,start:new Date().toISOString().slice(0,10)});toast('Staff created');adminView()}catch(x){toast(x.message)}}
@@ -167,7 +173,7 @@ async function setC(id,f){const c=cache.find(x=>x.id===id);f(c);c.updated=new Da
 const restC=id=>setC(id,c=>c.deleted=false),hideC=id=>confirm('Hide forever?')&&setC(id,c=>c.hide=true);
 function financeView(){let T=0,P=0;const r=cache.filter(c=>!c.deleted).map(c=>{const vs=(c.visits||[]).filter(v=>!v.del),b=(+c.total||0)+vs.reduce((s,v)=>s+(+v.total||0),0),p=(+c.deposit||0)+paid(c)+vs.reduce((s,v)=>s+(+v.deposit||0)+paid(v),0);T+=b;P+=p;return`<div class="card"><b>${esc(c.name)}</b> <small>${esc(c.id)}</small><br><small>Billed ₦${b.toLocaleString()} · Paid ₦${p.toLocaleString()} · Owed ₦${(b-p).toLocaleString()}</small></div>`}).join('');
  shell(`<header><button onclick="home()">← Back</button><b>Finance</b></header><main><button class="lnk" onclick="finRep('day')">Daily report</button><button class="lnk" onclick="finRep('week')">Weekly report</button><button class="lnk" onclick="finRep('month')">Monthly report</button><button class="lnk" onclick="finRep('year')">Annual report</button><div class="card"><b>Billed ₦${T.toLocaleString()} · Paid ₦${P.toLocaleString()} · Owed ₦${(T-P).toLocaleString()}</b></div>${r}</main>`)}
-function backup(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(cache)],{type:'application/json'}));a.download='bosman-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
+async function backup(){await sync();adm()&&markBk('JSON file');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(bkData())],{type:'application/json'}));a.download='bosman-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click()}
 function restore(){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=async()=>{try{const a=JSON.parse(await i.files[0].text());let n=0;for(const c of a)if(c.id&&c.name&&typeof c.updated==='string'){const o=cache.find(x=>x.id===c.id);if(!o||c.updated>o.updated){await put(c);n++}}cache=await all();list();toast(n+' clients restored');sync()}catch(x){toast('Bad backup file')}};i.click()}
 
 /* ===== LIBS, OVERLAY ===== */
@@ -186,11 +192,11 @@ async function syncPh(){const d=await DB,al=await new Promise(r=>{const q=d.tran
  for(const p of al)if(!p.up){const ref=db.collection('photos').doc(p.id.slice(3));if(!(await ref.get()).exists)await ref.set({d:p.d});p.up=1;await pput(p)}
  const have=new Set(al.map(p=>p.id));for(const id of[...cache.flatMap(c=>[...(c.ph?.style||[]),...(c.ph?.done||[])]),...TK.flatMap(t=>t.pics||[])])if(!have.has(id)){const s=await db.collection('photos').doc(id.slice(3)).get();if(s.exists)await pput({id,d:s.data().d,up:1})}}
 /* ===== VISITS ===== */
-async function addVisit(){if(!cur.id)return toast('Save the client first');if(!confirm('Save this visit to history and start a new visit?'))return;
+async function addVisit(){if(!adm()&&!EDITOK)return toast('Request approval to edit this client first');if(!cur.id)return toast('Save the client first');if(!confirm('Save this visit to history and start a new visit?'))return;
  ['fabric','style','pieces','due','total','deposit','notes','other'].forEach(k=>{const e=$('#f_'+k);if(e)cur[k]=e.value});cur.m=collectM();
  const v={n:cur.visit||1,date:new Date().toISOString().slice(0,10)};['fabric','style','pieces','due','total','deposit','notes','m','pay','ph','items'].forEach(k=>v[k]=cur[k]);
  (cur.visits??=[]).push(v);cur.visit=v.n+1;['fabric','style','pieces','due','total','deposit','notes','other'].forEach(k=>cur[k]='');cur.m={};cur.pay=[];cur.ph={};cur.items=[];cur.status='In progress';
- cur.updated=new Date().toISOString();cur.updatedBy={n:me.name,s:me.sid};await put(cur);cache=await all();form(cur.id);sync()}
+ cur.updated=new Date().toISOString();cur.updatedBy={n:me.name,s:me.sid};await put(cur);cache=await all();clientForm(cur.id);sync()}
 function showVisit(i){const v=cur.visits[i];ovl(`<h3>Visit ${v.n} · ${esc(v.date)}</h3><p>${esc(v.style)} · ${esc(v.fabric)} · qty ${esc(v.pieces)}<br>${adm()?'Total ₦'+(+v.total||0).toLocaleString()+' · deposit ₦'+(+v.deposit||0).toLocaleString()+' · payments ₦'+paid(v).toLocaleString():''}</p>${(v.items||[]).map(x=>`<p>${esc(x.label)}: ${esc(x.style)}, ${esc(x.fabric)}, qty ${esc(x.qty)}</p>`).join('')}<p><small>${cinfo({m:v.m,name:'',id:''}).slice(6).map(esc).join('<br>')}</small></p><button class="btn" onclick="$('#ovl').remove()">Close</button>`)}
 function delVisit(i){cur.visits[i].del=!cur.visits[i].del;saveC()}
 /* ===== IMPORT / EXCEL ===== */
@@ -204,15 +210,15 @@ async function sharePdf(){try{await lib(JSP);const p=new jspdf.jsPDF();p.setFont
 function emailC(){const c=cur;location.href='mailto:'+encodeURIComponent(c.email||'')+'?subject='+encodeURIComponent(`${c.name} (${c.id}) - ${c.style||''}`)+'&body='+encodeURIComponent(`Hello ${c.name}, your outfit is ready for collection.`)}
 /* ===== STAFF HR ===== */
 let HR;
-async function hrView(e){try{const d=await db.collection('staff').doc(e).get();HR={e,...d.data(),notes:d.data().notes||[]};drawHR()}catch(x){toast(x.message)}}
-function drawHR(){const x=HR;shell(`<header><button onclick="adminView()">← Back</button><b>${esc(x.name)} · ${esc(x.sid)}</b></header><main><label>Start date</label><input id="hs" type="date" value="${esc(x.start)}"><label>Membership end date</label><input id="he" type="date" value="${esc(x.end)}"><button class="btn" onclick="saveHR().then(()=>toast('Saved'))">Save dates</button><h3>Notes</h3>${x.notes.map(n=>`<div class="card"><b>${esc(n.type)}</b> ${esc(n.date)} <small>by ${esc(n.by)}</small><br>${esc(n.text)}</div>`).join('')}<select id="hn"><option>Query</option><option>Appraisal</option><option>Warning</option><option>Praise</option></select><input id="ht" placeholder="Note"><button class="btn" onclick="addNote()">Add note</button><h3>Recent clients</h3>${cache.filter(c=>c.createdBy?.s===x.sid||c.updatedBy?.s===x.sid).sort((a,b)=>b.updated.localeCompare(a.updated)).slice(0,10).map(c=>`<div class="card">${esc(c.name)} <small>${esc(c.id)}</small></div>`).join('')}</main>`)}
-async function saveHR(){HR.start=$('#hs').value;HR.end=$('#he').value;try{await db.collection('staff').doc(HR.e).update({start:HR.start,end:HR.end,notes:HR.notes})}catch(x){toast(x.message)}}
+async function hrView(e){try{const d=await db.collection('staff').doc(e).get();HR={e,...d.data(),notes:d.data().notes||[]};try{await loadPics(HR.pics||[])}catch(_){}drawHR()}catch(x){toast(x.message)}}
+function drawHR(){const x=HR;shell(`<header><button onclick="adminView()">← Back</button><b>${esc(x.name)} · ${esc(x.sid)}</b></header><main><label>Start date</label><input id="hs" type="date" value="${esc(x.start)}"><label>Membership end date</label><input id="he" type="date" value="${esc(x.end)}"><button class="btn" onclick="saveHR().then(()=>toast('Saved'))">Save dates</button><h3>Notes</h3>${x.notes.map(n=>`<div class="card"><b>${esc(n.type)}</b> ${esc(n.date)} <small>by ${esc(n.by)}</small><br>${esc(n.text)}</div>`).join('')}<select id="hn"><option>Query</option><option>Appraisal</option><option>Warning</option><option>Praise</option></select><input id="ht" placeholder="Note"><button class="btn" onclick="addNote()">Add note</button><h3>Pictures</h3>${(x.pics||[]).map(id=>`<span class="th"><img data-ph="${id}"><b onclick="rmHP('${id}')">×</b></span>`).join('')}<label class="btn">Add pictures<input type="file" accept="image/*" multiple hidden onchange="addHP(this.files)"></label><label class="btn">Take picture<input type="file" accept="image/*" capture="environment" hidden onchange="addHP(this.files)"></label><h3>Recent clients</h3>${cache.filter(c=>c.createdBy?.s===x.sid||c.updatedBy?.s===x.sid).sort((a,b)=>b.updated.localeCompare(a.updated)).slice(0,10).map(c=>`<div class="card">${esc(c.name)} <small>${esc(c.id)}</small></div>`).join('')}</main>`);fillImgs()}
+async function saveHR(){HR.start=$('#hs').value;HR.end=$('#he').value;try{await syncPh();await db.collection('staff').doc(HR.e).update({start:HR.start,end:HR.end,notes:HR.notes,pics:HR.pics||[]})}catch(x){toast(x.message)}}
 async function addNote(){const t=$('#ht').value.trim();if(!t)return;HR.notes.push({type:$('#hn').value,date:new Date().toISOString().slice(0,10),by:me.name,text:t});await saveHR();drawHR()}
 /* ===== TASKS, TO-DO, CALENDAR, REMINDERS ===== */
 let TK=[],TD=[],AT=[],STF=[],CD=new Date().toISOString().slice(0,10),CM=new Date();
 const RM=()=>{try{return JSON.parse(localStorage.bos_rm)||{}}catch(_){return{}}};
 async function loadTasks(){try{const T=db.collection('tasks'),qs=adm()?[T]:[T.where('to','==','all'),T.where('to','==',me.email)],m={};for(const q of qs)(await q.get()).docs.forEach(d=>m[d.id]={id:d.id,...d.data()});TK=Object.values(m)}catch(_){}}
-async function tasksView(){shell('<header><button onclick="home()">← Back</button><b>Tasks</b></header><main id="tm">Loading…</main>');try{Notification.requestPermission()}catch(_){}
+async function tasksView(){if(!$('#tm'))shell('<header><button onclick="home()">← Back</button><b>Tasks</b></header><main id="tm">Loading…</main>');try{Notification.requestPermission()}catch(_){}
  try{await loadTasks();try{await syncPh()}catch(_){}const g=async c=>(await db.collection(c).get()).docs.map(d=>({id:d.id,...d.data()}));TD=await g('todos');AT=adm()?await g('admintodos'):[];STF=adm()?await g('staff'):[];drawT()}catch(x){$('#tm').textContent='Needs internet / sign-in: '+x.message}}
 const tlist=(c,a)=>`<h3>${c==='todos'?'Team to-do':'Admin to-do'}</h3>`+a.map(x=>`<div class="card"><input type="checkbox" style="width:24px;min-height:24px" ${x.done?'checked':''} onchange="tick('${c}','${x.id}',this.checked)"> ${x.done?'<s>'+esc(x.t)+'</s>':esc(x.t)} <small>${esc(x.by)}</small> <button class="lnk" onclick="rmT('${c}','${x.id}')">×</button></div>`).join('')+`<input id="n_${c}" placeholder="New item"><button class="btn" onclick="addT('${c}')">Add</button>`;
 const dbop=async f=>{try{await f();tasksView()}catch(x){toast(x.message)}};
@@ -238,7 +244,7 @@ async function dup(n,body,mime,p,sent){const key=(p||'')+n,hs=typeof body==='str
  fd.append('metadata',new Blob([JSON.stringify(id?{name:n}:{name:n,parents:p?[p]:undefined})],{type:'application/json'}));fd.append('file',new Blob([body],{type:mime}));
  await dapi('https://www.googleapis.com/upload/drive/v3/files'+(id?'/'+id:'')+'?uploadType=multipart&fields=id',{method:id?'PATCH':'POST',body:fd});sent[key]=hs;localStorage['bos_ds_'+DA]=JSON.stringify(sent)}
 async function driveBackup(em){try{DA=em;const k=TOK[em];if(k&&Date.now()<k.e)GT=k.t;else{toast('Connecting to Google…');GT=await driveToken(em);TOK[em]={t:GT,e:Date.now()+3.4e6}}
- let sent={};try{sent=JSON.parse(localStorage['bos_ds_'+em])||{}}catch(_){}const q=(await dapi('https://www.googleapis.com/drive/v3/about?fields=storageQuota')).storageQuota,js=JSON.stringify(cache);
+ await sync();let sent={};try{sent=JSON.parse(localStorage['bos_ds_'+em])||{}}catch(_){}const q=(await dapi('https://www.googleapis.com/drive/v3/about?fields=storageQuota')).storageQuota,js=JSON.stringify(cache);
  if(+q.limit){const fr=+q.limit-+q.usage;if(fr<js.length*3)return toast('Drive FULL: free some space');if(fr/+q.limit<.1)toast('Warning: less than 10% of Drive is free')}
  toast('Backing up…');await dup('Backup.json',js,'application/json',null,sent);await dup('All_Clients.csv','\uFEFF'+csvText(),'text/csv',null,sent);
  const pf=await dfolder('Photos'),live=cache.filter(c=>!c.deleted);for(const c of live)for(const k of['style','done'])for(const[i,id]of(c.ph?.[k]||[]).entries()){const p=await pget(id);if(p)await dup(`${c.id}_${c.name.replace(/[^\w]+/g,'_')}_${k}${i+1}.jpg`,await(await fetch(p.d)).blob(),'image/jpeg',pf,sent)}
@@ -246,7 +252,7 @@ async function driveBackup(em){try{DA=em;const k=TOK[em];if(k&&Date.now()<k.e)GT
  await dup('All_Visits_in_order.csv','\uFEFF'+['Date,ID,Name,Visit,Style,Fabric,Total'].concat(vs.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(','))).join('\n'),'text/csv',hf,sent);
  await dup('Backup_'+new Date().toISOString().slice(0,10)+'.json',js,'application/json',hf,sent);
  for(const c of live){const cf=await dfolder(c.id+'_'+c.name.replace(/[^\w]+/g,'_'),hf);for(const v of(c.visits||[]).filter(v=>!v.del))await dup(`Visit ${String(v.n).padStart(2,'0')}.txt`,[`Visit ${v.n} - ${v.date}`,...cinfo({...v,name:c.name,id:c.id})].join('\n'),'text/plain',cf,sent)}
- toast('Drive backup done')}catch(x){delete TOK[em];toast('Backup failed: '+x.message)}}
+ markBk('Google Drive');toast('Drive backup done')}catch(x){delete TOK[em];toast('Backup failed: '+x.message)}}
 const csvText=()=>[KS.join(',')].concat(cache.filter(c=>!c.deleted).map(c=>KS.map(k=>'"'+String(c[k]??'').replace(/"/g,'""')+'"').join(','))).join('\n');
 
 /* ===== ITEMS, VISIT EDIT ===== */
@@ -289,6 +295,36 @@ async function importGo(){try{const mp={};IMP.forEach(k=>mp[k]=$('#im_'+k).value
  if(!out.length)return toast('Nothing new to import ('+skip+' duplicates)');if(!confirm(`Import ${out.length} clients? (${skip} duplicates skipped). First: ${out[0].name}`))return;
  for(const c of out)await put(c);cache=await all();list();toast(out.length+' imported');sync()}catch(x){toast(x.message)}}
 
+/* ===== VISIT REPORT + BACKUP BANNER ===== */
+const allVisits=()=>cache.filter(c=>!c.deleted).flatMap(c=>[...(c.visits||[]).filter(v=>!v.del).map(v=>({d:v.date,c,n:v.n,s:v.style,f:v.fabric,p:v.pieces,t:v.total})),{d:(c.updated||'').slice(0,10),c,n:c.visit||1,s:c.style,f:c.fabric,p:c.pieces,t:c.total}]).sort((a,b)=>(a.d||'').localeCompare(b.d||''));
+function visitReport(m){m=m||new Date().toISOString().slice(0,7);const v=allVisits(),sel=v.filter(x=>(x.d||'').startsWith(m));
+ shell(`<header><button onclick="home()">← Back</button><b>Visit report</b></header><main><label>Month and year</label><input type="month" id="vm" value="${esc(m)}" onchange="visitReport(this.value)"><div class="sec"><b>${sel.length} visit(s) in ${esc(m)}</b><br><small>All visits ever: ${v.length}</small></div>${sel.map(x=>`<div class="card"><b>${esc(x.c.name)}</b> <small>${esc(x.c.id)} · visit ${esc(x.n)}</small><br><small>${esc(x.d)} · ${esc(x.s)} · ${esc(x.f)} · ${esc(x.p)} pc</small></div>`).join('')||'<p class="muted">No visits this month.</p>'}<button class="btn" onclick="visitCsv()">Download all visits (CSV, date order)</button></main>`)}
+function visitCsv(){const r=[['Date','Client ID','Name','Visit','Style','Fabric','Pieces','Total'].join(',')].concat(allVisits().map(x=>[x.d,x.c.id,x.c.name,x.n,x.s,x.f,x.p,x.t].map(y=>'"'+String(y??'').replace(/"/g,'""')+'"').join(',')));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+r.join('\n')],{type:'text/csv'}));a.download='All_Visits_in_order.csv';a.click()}
+const markBk=async t=>{localStorage.bos_lastbk=Date.now();try{await db.collection('meta').doc('shop').set({lastBackup:Date.now(),lastBackupBy:me.name,lastBackupType:t},{merge:true})}catch(_){}bkBanner()};
+async function pullBk(){try{const d=await db.collection('meta').doc('shop').get(),t=d.exists?+d.data().lastBackup||0:0;if(t>(+localStorage.bos_lastbk||0))localStorage.bos_lastbk=t}catch(_){}bkBanner()}
+function bkBanner(){const e=$('#bk');if(!e)return;const t=+localStorage.bos_lastbk||0;e.style.display=adm()&&Date.now()-t>6048e5?'block':'none';e.textContent=ACC().length?'⚠ Backup due: tap Drive backup, or use Export → Full backup.':'⚠ Backup due: link Google Drive below, or use Export → Full backup.'}
+
+/* ===== STAFF APPROVALS, STAFF CORNER, HR PICTURES, DELETE PASSWORD ===== */
+let EDITOK=true;
+const fillImgs=()=>document.querySelectorAll('img[data-ph]').forEach(async e=>{const p=await pget(e.dataset.ph);if(p){e.src=p.d;e.onclick=()=>big(e.dataset.ph)}});
+async function loadPics(ids){for(const id of ids)if(!await pget(id)){const s=await db.collection('photos').doc(id.slice(3)).get();if(s.exists)await pput({id,d:s.data().d,up:1})}}
+async function addHP(fs){try{HR.pics??=[];for(const f of fs)HR.pics.push(await pic(f));await saveHR();drawHR()}catch(x){toast(x.message)}}
+async function rmHP(id){HR.pics=(HR.pics||[]).filter(x=>x!==id);await saveHR();drawHR()}
+const bkData=()=>adm()?cache:cache.map(c=>{const x={...c};['phone','email','total','deposit','pay'].forEach(k=>delete x[k]);x.visits=(c.visits||[]).map(v=>({...v,total:undefined,deposit:undefined,pay:undefined}));return x});
+async function adminOk(){const e=(prompt('Admin or owner email')||'').trim().toLowerCase(),p=e&&prompt('Their password');if(!p||![CFG.admin,CFG.owner].includes(e))return false;try{const s=firebase.apps.find(a=>a.name==='sec')||firebase.initializeApp(firebaseConfig,'sec');await s.auth().signInWithEmailAndPassword(e,p);await s.auth().signOut();return true}catch(_){return false}}
+async function del(){if(!(adm()?await askPw():await adminOk()))return toast('Not approved: wrong password');cur.deleted=true;saveC(true)}
+function mineList(){const m=$('#mine');if(!m)return;const l=cache.filter(c=>!c.deleted&&(c.updatedBy?.s===me.sid||c.createdBy?.s===me.sid)).sort((a,b)=>(b.updated||'').localeCompare(a.updated||''));
+ m.innerHTML=l.length?l.map(c=>`<div class="card" onclick="clientForm('${esc(c.id)}')"><b>${esc(c.name)}</b> <small>${esc(c.id)}</small><br><small>Customer ${c.createdBy?.s===me.sid?'added':'updated'} by me · ${esc((c.updated||'').slice(0,10))}</small></div>`).join(''):'<p class="muted">Customers you add or update will show here as "customer updated by me".</p>'}
+async function checkAppr(){const e=$('#appr');if(!e||e.hidden||!cur?.id)return;try{const d=await db.collection('approvals').doc(me.email+'__'+cur.id).get(),x=d.exists?d.data():null,ok=!!(x&&x.status==='approved'&&x.exp>Date.now());EDITOK=ok;
+ document.querySelectorAll('main input,main select,main textarea').forEach(i=>i.disabled=!ok);
+ e.innerHTML=ok?`✅ Approved to edit until ${new Date(x.exp).toTimeString().slice(0,5)}`:x&&x.status==='pending'?`⏳ Waiting for admin/owner approval <button class="bv" onclick="checkAppr()">Check again</button>`:`🔒 ${x&&x.status==='rejected'?'Request was rejected. ':''}Editing needs approval from admin or owner <button class="btn" onclick="reqAppr()">Request approval to edit</button>`}catch(err){e.textContent='🔒 Needs internet to check approval'}}
+async function reqAppr(){try{await db.collection('approvals').doc(me.email+'__'+cur.id).set({email:me.email,by:me.name,sid:me.sid,cid:cur.id,cname:cur.name||'',status:'pending',at:Date.now()});toast('Request sent to admin and owner');checkAppr()}catch(x){toast(x.message)}}
+async function loadApr(){const e=$('#apr');if(!e||!adm()||!db||!navigator.onLine)return;try{const s=await db.collection('approvals').where('status','==','pending').get();
+ e.innerHTML=s.empty?'':`<div class="alert"><b>🔔 ${s.size} staff request(s) to edit a client</b>${s.docs.map(d=>{const x=d.data();return`<div class="card"><b>${esc(x.by)}</b> (${esc(x.sid)}) wants to edit <b>${esc(x.cname)}</b> ${esc(x.cid)}<div class="row"><button class="btn" onclick="decide('${esc(d.id)}',1)">Approve (2 hours)</button><button class="btn2" onclick="decide('${esc(d.id)}',0)">Reject</button></div></div>`}).join('')}</div>`}catch(_){}}
+const decide=async(id,ok)=>{try{await db.collection('approvals').doc(id).update(ok?{status:'approved',exp:Date.now()+72e5,approvedBy:me.name}:{status:'rejected'});toast(ok?'Approved for 2 hours':'Rejected');loadApr()}catch(x){toast(x.message)}};
+setInterval(loadApr,3e4);
+
+addEventListener('error',e=>toast('Error: '+e.message));addEventListener('unhandledrejection',e=>toast('Error: '+(e.reason&&e.reason.message||e.reason)));
 /* ===== BOOT ===== */
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 let cr0=null;try{cr0=JSON.parse(localStorage.bos_cred)}catch(_){}
