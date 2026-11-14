@@ -73,7 +73,7 @@ try{firebase.initializeApp(firebaseConfig);auth=firebase.auth();db=firebase.fire
 /* ===== LOCAL STORAGE (IndexedDB) ===== */
 const DB=new Promise((res,rej)=>{const r=indexedDB.open('bosman_pouch',2);r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains('clients'))d.createObjectStore('clients',{keyPath:'id'});if(!d.objectStoreNames.contains('photos'))d.createObjectStore('photos',{keyPath:'id'})};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>toast('Close other open copies of this app, then reopen it')});
 const all=async()=>{const d=await DB;return new Promise(r=>{const q=d.transaction('clients').objectStore('clients').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>r([])})};
-const put=async c=>{const d=await DB;return new Promise(r=>{const t=d.transaction('clients','readwrite');t.objectStore('clients').put(c);t.oncomplete=r;t.onerror=r})};
+const put=async c=>{const d=await DB;return new Promise(r=>{const t=d.transaction('clients','readwrite');t.objectStore('clients').put(c);t.oncomplete=()=>{r();DRV.schedule()};t.onerror=r})};
 
 /* ===== INSTALL ===== */
 const standalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone;
@@ -110,7 +110,7 @@ async function changePw(forced,cur0){const c=cur0||prompt('Current password');if
 function lock(){localStorage.bos_locked=1;me=null;loginView()}
 
 /* ===== HOME ===== */
-async function start(){cache=await all();home();sync();loadTasks()}
+async function start(){cache=await all();home();sync();loadTasks();loadPhc()}
 function due(c){if(!c.due||c.status==='Completed'||c.status==='Delivered')return'';const d=(new Date(c.due)-new Date().setHours(0,0,0,0))/864e5;return d<0?'over':d<=3?'soon':''}
 function home(){const A=adm(),junk=cache.filter(c=>c.deleted&&!c.hide).length;
 shell(`<div id="bk" class="bk"></div><header><img src="${LOGO}" alt=""><div><b class="ttl">Tailor's Pouch</b><br><small>${CFG.brand}</small></div><div class="hb"><button class="pri" onclick="clientForm()">+ New</button></div></header>
@@ -121,7 +121,7 @@ ${A?`<div class="sec"><h3>Admin</h3><div class="row"><button class="btn" onclick
 <div id="tm">Loading tasks…</div>
 ${A?`<div class="sec"><h3>Finance</h3><div class="row"><button class="btn" onclick="financeView()">💼 Finance records</button><button class="btn2" onclick="finRep()">📈 Daily / weekly / monthly / annual report</button></div></div>
 <div class="sec"><h3>Export</h3><div class="row sm"><button class="btn2" onclick="exportCsv()">CSV</button><button class="btn2" onclick="exportXlsx()">Excel</button><button class="btn2" onclick="backup()">Full backup</button><button class="btn2" onclick="visitReport()">📊 Visit report</button><button class="btn2" onclick="importF()">⬆ Import CSV/Excel</button><button class="btn2" onclick="window.print()">PDF / Print</button></div></div>
-<div class="sec"><h3>Google Drive (automatic backup)</h3><div class="rowl"><small class="muted">Google Client ID: ${localStorage.bos_gid?'saved on this phone':'not set'}</small><span><button class="lnk" onclick="addAccDlg()">Edit / paste</button>${localStorage.bos_gid?'<button class="lnk" onclick="removeGid()">Remove</button>':''}</span></div><div class="row"><button class="btn" onclick="addAccDlg()">+ Add Drive account</button><button class="btn2" onclick="driveNow()">Back up all (one by one)</button></div>${ACC().map(e=>{const s=DST()[e];return`<div class="rowl"><span><small>${esc(e)}</small><br><small class="muted">${s?(s.ok?'✅ Last backup '+new Date(s.t).toLocaleString():'⚠ '+esc(s.msg||'failed')):'Not backed up yet'}</small></span><span><button class="bv" onclick="driveBackup('${esc(e)}').then(home)">Back up</button><button class="lnk" onclick="rmAcc('${esc(e)}')">remove</button></span></div>`}).join('')}<button class="lnk" onclick="resetDrive()">Reset Drive settings</button><details><summary>How to set up (free)</summary><p class="muted">1) Tap Add Drive account and sign in with the Google account, ticking the Google Drive box. 2) Tap Back up now. After about an hour, tap Back up now again to reconnect. Add more accounts the same way.</p></details></div>
+<div class="sec" id="drv">${drvHTML()}</div>
 <div class="sec"><h3>Restore &amp; security</h3><label>Restore from a backup file</label><input type="file" accept=".json" onchange="restoreF(this)"><div class="row"><button class="btn2" onclick="changePw()">Change password</button><button class="btn2" onclick="lock()">🔒 Lock</button><button class="btn2" onclick="junkView()">🗑 Junk basket (${junk})</button><button class="btn2" onclick="upd()">Check for update</button></div></div>`:`<div class="sec"><h3>Account</h3><div class="row"><button class="btn2" onclick="backup()">Backup my data</button><button class="btn2" onclick="changePw()">Change password</button><button class="btn2" onclick="lock()">🔒 Lock</button><button class="btn2" onclick="upd()">Check for update</button></div></div>`}
 <p class="muted">Tailor's Pouch v3.0 · ${navigator.onLine?'online':'offline'}</p></main>`);
  $('#q').oninput=e=>{Q=e.target.value;list()};list();upInst();tasksView();setTimeout(list,500);bkBanner();pullBk();loadApr();bdayCheck()}
@@ -233,7 +233,7 @@ const XL='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',H2C='h
 const ovl=h=>{$('#ovl')?.remove();const d=document.createElement('div');d.id='ovl';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:20;overflow:auto;padding:20px;color:#fff';d.innerHTML=h;document.body.appendChild(d)};
 /* ===== PHOTOS ===== */
 const pdb=async(m,f)=>{const d=await DB;return new Promise(r=>{const t=d.transaction('photos',m),q=f(t.objectStore('photos'));t.oncomplete=()=>r(q&&q.result);t.onerror=()=>r()})};
-const pget=id=>pdb('readonly',s=>s.get(id)),pput=o=>pdb('readwrite',s=>s.put(o));
+const pget=id=>pdb('readonly',s=>s.get(id)),pput=o=>{PHC[o.id]=o.d;return pdb('readwrite',s=>s.put(o))};
 const phUI=(k,t)=>`<div class="sec"><h3>${t}</h3><div id="ph_${k}"></div><div class="row"><label class="btn">🖼️ Choose photos<input type="file" accept="image/*" multiple hidden onchange="addPh('${k}',this.files)"></label><label class="btn2">📷 Take photo<input type="file" accept="image/*" capture="environment" hidden onchange="addPh('${k}',this.files)"></label></div></div>`;
 async function addPh(k,files){try{for(const f of files){const im=await createImageBitmap(f),s=Math.min(1,900/Math.max(im.width,im.height)),cv=document.createElement('canvas');cv.width=im.width*s;cv.height=im.height*s;cv.getContext('2d').drawImage(im,0,0,cv.width,cv.height);const d=cv.toDataURL('image/jpeg',.7),id='ph:'+(await hash('p',d)).slice(0,24);await pput({id,d,up:0});((cur.ph??={})[k]??=[]).push(id)}showPh()}catch(x){toast('Photo failed: '+x.message)}}
 async function showPh(){for(const k of['style','done']){const e=$('#ph_'+k);if(!e)continue;e.innerHTML='';for(const id of cur.ph?.[k]||[]){const p=await pget(id);if(p)e.insertAdjacentHTML('beforeend',`<span class="th"><img src="${p.d}" onclick="big('${id}')"><b onclick="rmPh('${k}','${id}')">×</b></span>`)}}}
@@ -287,26 +287,179 @@ function drawT(){const y=CM.getFullYear(),m=CM.getMonth(),n=new Date(y,m+1,0).ge
 setInterval(()=>{if(!me||$('#ovl'))return;const r=RM(),n=Date.now();for(const t of TK){if(t.done||t.remind==='none'||!t.remind||!t.date||!(t.to==='all'||t.to===me.email||(adm()&&t.to==='admin')))continue;
  const at=new Date(t.date+'T'+(t.time||'09:00')).getTime()-(+t.remind)*6e4;if(n>=at&&n>(r[t.id]||0)){ovl(`<h3>⏰ ${esc(t.title)}</h3><p>${esc(t.date)} ${esc(t.time||'')}</p><button class="btn" onclick="rmd('${t.id}',1)">Done</button><button class="btn" onclick="rmd('${t.id}',2)">Snooze 10 minutes</button><button class="btn" onclick="rmd('${t.id}',3)">Dismiss</button>`);try{new Notification('Task due',{body:t.title})}catch(_){}break}}},3e4);
 async function rmd(id,a){const r=RM();r[id]=a===2?Date.now()+6e5:9e15;localStorage.bos_rm=JSON.stringify(r);if(a===1)try{await db.collection('tasks').doc(id).update({done:true,doneBy:me.name,doneAt:new Date().toISOString()});TK.find(t=>t.id===id).done=true}catch(_){}$('#ovl')?.remove()}
-/* ===== GOOGLE DRIVE BACKUP ===== */
-let GT,GE=0;const DS='https://www.googleapis.com/auth/drive.file';
-function driveToken(hint){return new Promise(async(ok,no)=>{try{const id=(localStorage.bos_gid||'').trim();if(!id)return no(new Error('Paste your Google Client ID first (tap + Add Drive account)'));await lib('https://accounts.google.com/gsi/client');
- google.accounts.oauth2.initTokenClient({client_id:id,scope:DS+' https://www.googleapis.com/auth/userinfo.email',error_callback:e=>no(new Error(e.type==='popup_closed'?'Sign-in window was closed':(e.message||e.type||'Sign-in failed'))),callback:r=>{if(r.error)return no(new Error(r.error_description||r.error));if(!google.accounts.oauth2.hasGrantedAllScopes(r,DS))return no(new Error('Tick the Google Drive box when signing in'));ok(r.access_token)}}).requestAccessToken({prompt:hint?'':'select_account consent',hint:hint||undefined})}catch(x){no(x)}})}
-async function dapi(u,o){const r=await fetch(u,{...o,headers:{Authorization:'Bearer '+GT,...(o&&o.headers||{})}});if(!r.ok){let m=await r.text();try{m=JSON.parse(m).error.message}catch(_){}throw new Error(r.status+': '+m+(/accessNotConfigured|has not been used/.test(m)?' (Enable the Google Drive API in Google Cloud)':'')+(/insufficient/i.test(m)?' (Tick the Drive box when signing in)':''))}return r.json()}
-const dfind=async(n,p)=>(await dapi('https://www.googleapis.com/drive/v3/files?fields=files(id)&q='+encodeURIComponent(`name='${n}' and trashed=false`+(p?` and '${p}' in parents`:'')))).files[0]?.id;
-async function dfolder(n,p){return await dfind(n,p)||(await dapi('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,mimeType:'application/vnd.google-apps.folder',parents:p?[p]:undefined})})).id}
-async function dup(n,body,mime,p,sent){const key=(p||'')+n,hs=typeof body==='string'?await hash('d',body):key+(body.size||'');if(sent[key]===hs)return;const id=await dfind(n,p),fd=new FormData();
- fd.append('metadata',new Blob([JSON.stringify(id?{name:n}:{name:n,parents:p?[p]:undefined})],{type:'application/json'}));fd.append('file',new Blob([body],{type:mime}));
- await dapi('https://www.googleapis.com/upload/drive/v3/files'+(id?'/'+id:'')+'?uploadType=multipart&fields=id',{method:id?'PATCH':'POST',body:fd});sent[key]=hs;localStorage['bos_ds_'+DA]=JSON.stringify(sent)}
-async function driveBackup(em){try{DA=em;const k=TOK[em];if(k&&Date.now()<k.e)GT=k.t;else{toast('Connecting to Google…');GT=await driveToken(em);TOK[em]={t:GT,e:Date.now()+3.4e6}}
- await sync();let sent={};try{sent=JSON.parse(localStorage['bos_ds_'+em])||{}}catch(_){}const q=(await dapi('https://www.googleapis.com/drive/v3/about?fields=storageQuota')).storageQuota,js=JSON.stringify(cache);
- if(+q.limit){const fr=+q.limit-+q.usage;if(fr<js.length*3)return toast('Drive FULL: free some space');if(fr/+q.limit<.1)toast('Warning: less than 10% of Drive is free')}
- toast('Backing up…');await dup('Backup.json',js,'application/json',null,sent);await dup('All_Clients.csv','\uFEFF'+csvText(),'text/csv',null,sent);
- const pf=await dfolder('Photos'),live=cache.filter(c=>!c.deleted);for(const c of live)for(const k of['style','done'])for(const[i,id]of(c.ph?.[k]||[]).entries()){const p=await pget(id);if(p)await dup(`${c.id}_${c.name.replace(/[^\w]+/g,'_')}_${k}${i+1}.jpg`,await(await fetch(p.d)).blob(),'image/jpeg',pf,sent)}
- const hf=await dfolder('History'),vs=[];for(const c of cache)for(const v of[...(c.visits||[]).filter(v=>!v.del),{n:c.visit||1,date:(c.updated||'').slice(0,10),...c}])vs.push([v.date,c.id,c.name,v.n,v.style,v.fabric,v.total]);vs.sort((a,b)=>String(a[0]).localeCompare(b[0]));
- await dup('All_Visits_in_order.csv','\uFEFF'+['Date,ID,Name,Visit,Style,Fabric,Total'].concat(vs.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(','))).join('\n'),'text/csv',hf,sent);
- await dup('Backup_'+new Date().toISOString().slice(0,10)+'.json',js,'application/json',hf,sent);
- for(const c of live){const cf=await dfolder(c.id+'_'+c.name.replace(/[^\w]+/g,'_'),hf);for(const v of(c.visits||[]).filter(v=>!v.del))await dup(`Visit ${String(v.n).padStart(2,'0')}.txt`,[`Visit ${v.n} - ${v.date}`,...cinfo({...v,name:c.name,id:c.id})].join('\n'),'text/plain',cf,sent)}
- markBk('Google Drive');setDst(em,1,'');toast('Drive backup done: '+em)}catch(x){delete TOK[em];setDst(em,0,x.message);toast('Backup failed ('+em+'): '+x.message)}}
+/* ===== DRV: Google Drive backup (scope drive.file) ===== */
+const DRV = (() => {
+  const APP = 'BOSMAN';                       // short name used in file names
+  const P = 'bos_';                          // storage prefix, unique per app
+  const SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+  const DRIVE = 'https://www.googleapis.com/auth/drive.file';
+  let accounts = [];                         // [{email,j,c,v,hf:{},hv:{},ph:{},at,full,free,lim}]
+  try { accounts = JSON.parse(localStorage.getItem(P + 'gd') || '[]'); } catch (e) {}
+  const tokens = {};                         // email -> {t, e}, kept in memory only
+  let busy = false, lastAuto = 0, timer = 0, statusText = '', opts = { getData: null, onChange: () => {}, onStatus: () => {} };
+  const today = () => new Date().toISOString().slice(0, 10);
+  const clientId = () => (localStorage.getItem(P + 'gcid') || '').trim();
+  const setClientId = v => localStorage.setItem(P + 'gcid', String(v || '').trim());
+  const save = () => localStorage.setItem(P + 'gd', JSON.stringify(accounts));
+  const say = t => { statusText = t; opts.onStatus(t); };
+  const gb = n => (n / 1073741824).toFixed(1) + ' GB';
+  const sha = async t => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)))].map(x => x.toString(16).padStart(2, '0')).join('');
+
+  const gis = () => new Promise((res, rej) => {
+    if (window.google && google.accounts) return res();
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client'; s.onload = res;
+    s.onerror = () => rej(new Error('Cannot reach Google. Check the internet and try again.'));
+    document.head.appendChild(s);
+  });
+
+  // Must be called from a real tap when a popup is needed.
+  const requestToken = hint => gis().then(() => new Promise((res, rej) => {
+    google.accounts.oauth2.initTokenClient({
+      client_id: clientId(), scope: SCOPE, hint: hint || undefined, prompt: hint ? '' : 'select_account',
+      callback: r => {
+        if (!r.access_token) return rej(new Error(r.error || 'Google sign-in failed'));
+        if (!google.accounts.oauth2.hasGrantedAnyScope(r, DRIVE)) return rej(new Error('Drive permission was not granted. On the Google screen, tick the Google Drive box, then continue.'));
+        res(r);
+      },
+      error_callback: e => rej(new Error(e.type || 'Sign-in cancelled'))
+    }).requestAccessToken();
+  }));
+
+  const keep = (email, r) => { tokens[email] = { t: r.access_token, e: Date.now() + (r.expires_in - 60) * 1000 }; };
+  const tokenFor = async (a, ask) => { const t = tokens[a.email]; if (t && t.e > Date.now()) return t.t; if (!ask) return null; const r = await requestToken(a.email); keep(a.email, r); return r.access_token; };
+
+  async function add() {
+    if (!clientId()) throw new Error('Paste the Google Client ID first.');
+    const r = await requestToken();
+    const u = await (await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + r.access_token } })).json();
+    let a = accounts.find(x => x.email == u.email); if (!a) accounts.push(a = { email: u.email });
+    a.full = 0; keep(u.email, r); save(); opts.onChange(); schedule(0);
+  }
+  function remove(i) { accounts.splice(i, 1); save(); opts.onChange(); }
+
+  // Multipart upload. Creates the file the first time, then updates the same file by its saved id.
+  async function upload(tk, a, key, name, mime, body, parent, b64) {
+    const b = 'bnd' + Date.now();
+    const send = id => fetch('https://www.googleapis.com/upload/drive/v3/files' + (id ? '/' + id : '') + '?uploadType=multipart', {
+      method: id ? 'PATCH' : 'POST',
+      headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'multipart/related; boundary=' + b },
+      body: `--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(id ? {} : { name, mimeType: mime, ...(parent ? { parents: [parent] } : {}) })}\r\n--${b}\r\nContent-Type: ${mime}\r\n${b64 ? 'Content-Transfer-Encoding: base64\r\n' : ''}\r\n${body}\r\n--${b}--`
+    });
+    let r = await send(a[key]);
+    if (r.status == 404) { a[key] = null; r = await send(null); }
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({})), why = (((j.error || {}).errors || [])[0] || {}).reason || ('HTTP ' + r.status), e = new Error(why);
+      e.auth = r.status == 401; e.full = /quota|storage/i.test(why); throw e;
+    }
+    a[key] = (await r.json()).id;
+  }
+
+  async function folder(tk, a, key, name, parent) {
+    a.hf = a.hf || {}; if (a.hf[key]) return a.hf[key];
+    const r = await fetch('https://www.googleapis.com/drive/v3/files', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', ...(parent ? { parents: [parent] } : {}) }) });
+    if (!r.ok) throw new Error('folder ' + r.status);
+    return a.hf[key] = (await r.json()).id;
+  }
+
+  // clients: [{id, cid, name, photos:[dataUrl...], visits:[{k, date, text}]}]
+  async function photos(tk, a, clients) {
+    const root = await folder(tk, a, 'photos', APP + '_Photos'); a.ph = a.ph || {};
+    for (const c of clients) for (const [i, p] of (c.photos || []).entries()) {
+      if (!String(p).startsWith('data:image/')) continue;
+      const id = (await sha(p)).slice(0, 24); if (a.ph[id]) continue;
+      await upload(tk, a, 'p' + id, c.cid + '_' + String(c.name || '').replace(/[^\w]+/g, '_') + '_' + (i + 1) + '.jpg', 'image/jpeg', p.split(',')[1], root, true);
+      a.ph[id] = 1;
+    }
+  }
+
+  async function history(tk, a, hf, clients) {
+    a.hv = a.hv || {};
+    for (const c of clients) {
+      let cf = null;
+      for (const v of (c.visits || [])) {
+        const key = 'v' + c.id + '_' + v.k, h = (await sha(v.text)).slice(0, 12); if (a.hv[key] == h) continue;
+        cf = cf || await folder(tk, a, 'c' + c.id, c.cid + ' ' + String(c.name || '').replace(/[^\w]+/g, '_'), hf);
+        await upload(tk, a, 'f' + key, 'Visit ' + String(v.k).padStart(2, '0') + ' - ' + (v.date || 'no date') + '.txt', 'text/plain', v.text, cf);
+        a.hv[key] = h;
+      }
+    }
+  }
+
+  async function sync(ask) {
+    if (busy || !accounts.length || !clientId()) return;
+    if (!navigator.onLine) return say('Offline: will back up automatically when the internet returns.');
+    busy = true; const d = opts.getData(), errs = []; let ok = 0, need = 0;
+    for (const a of accounts) {
+      try {
+        const tk = await tokenFor(a, ask); if (!tk) { need++; continue; }
+        const q = await (await fetch('https://www.googleapis.com/drive/v3/about?fields=storageQuota', { headers: { Authorization: 'Bearer ' + tk } })).json().catch(() => ({})), m = q.storageQuota;
+        if (m && m.limit && (+m.limit - +m.usage) < d.json.length * 2 + 1e6) { a.full = 1; continue; }
+        a.full = 0; a.lim = m && m.limit ? +m.limit : null; a.free = a.lim ? a.lim - +m.usage : null;
+        await upload(tk, a, 'j', APP + '_Backup.json', 'application/json', d.json);
+        await upload(tk, a, 'c', APP + '_All_Clients.csv', 'text/csv', d.csv);
+        try {
+          const hf = await folder(tk, a, 'hist', APP + '_History');
+          await upload(tk, a, 'v', APP + '_All_Visits_in_order.csv', 'text/csv', d.visitsCsv, hf);
+          await upload(tk, a, 'd' + today(), APP + '_Backup_' + today() + '.json', 'application/json', d.json, hf);
+          await history(tk, a, hf, d.clients); await photos(tk, a, d.clients);
+        } catch (e) { errs.push(e.message); }
+        a.at = Date.now(); ok++;
+      } catch (e) { if (e.full) a.full = 1; else if (e.auth) { delete tokens[a.email]; need++; } else errs.push(e.message || 'error'); }
+    }
+    busy = false; save(); opts.onChange();
+    const em = errs[0] || '', hint = /accessNotConfigured|disabled/i.test(em) ? ' -> enable the Google Drive API in Google Cloud.' : /insufficient|permission/i.test(em) ? ' -> remove the app at myaccount.google.com/connections, reconnect and tick Drive.' : '';
+    if (!accounts.some(a => !a.full)) return say('All linked Drive accounts are full. Add another Drive account.');
+    say(ok ? 'Backed up to ' + ok + ' Drive account(s) at ' + new Date().toLocaleTimeString() + (errs.length ? ' (note: ' + errs[0] + ')' : '') : need ? 'Tap Back up now to reconnect Google Drive.' : errs.length ? 'Backup failed: ' + em + hint : 'Nothing was backed up.');
+  }
+
+  function schedule(ask) { clearTimeout(timer); timer = setTimeout(() => sync(ask || 0), 4000); }
+
+  async function restore(i) {
+    const a = accounts[i], tk = await tokenFor(a, 1), h = { headers: { Authorization: 'Bearer ' + tk } };
+    const l = await (await fetch('https://www.googleapis.com/drive/v3/files?orderBy=modifiedTime%20desc&pageSize=1&q=' + encodeURIComponent(`name='${APP}_Backup.json' and trashed=false`), h)).json();
+    if (!(l.files || []).length) throw new Error('No backup found in this account.');
+    return (await fetch('https://www.googleapis.com/drive/v3/files/' + l.files[0].id + '?alt=media', h)).text();   // hand this text to the app's own import function
+  }
+
+  addEventListener('online', () => sync(0));
+  // Reconnect on the first tap of each hour, because Google popups need a real tap.
+  addEventListener('pointerdown', () => {
+    if (!accounts.length || !clientId() || !navigator.onLine || Date.now() - lastAuto < 3300e3) return;
+    if (accounts.every(a => a.full || (tokens[a.email] && tokens[a.email].e > Date.now()))) return;
+    lastAuto = Date.now(); sync(1);
+  }, true);
+
+  return {
+    init: o => { opts = Object.assign(opts, o); },   // o.getData must return {json, csv, visitsCsv, clients}
+    accounts: () => accounts, clientId, setClientId, add, remove, sync, schedule, restore,
+    status: () => statusText, gb
+  };
+})();
+
+/* ===== DRV ADAPTER: data for the module + Drive screen (module above is unchanged) ===== */
+const PHC={};let DRVERR='';
+async function loadPhc(){try{const d=await DB,al=await new Promise(r=>{const q=d.transaction('photos').objectStore('photos').getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>r([])});al.forEach(p=>PHC[p.id]=p.d)}catch(e){drvErr(e)}}
+function getData(){const live=cache.filter(c=>!c.deleted),q=x=>'"'+String(x??'').replace(/"/g,'""')+'"',L=x=>'₦'+(+x||0).toLocaleString(),
+ vtxt=(c,v)=>[...cinfo({...v,name:c.name,id:c.id}),'',...(v.items||[]).map(x=>`Item: ${x.label} · ${x.style} · ${x.fabric} · qty ${x.qty} · ${L(x.price)}`),'',`Total: ${L(v.total)}`,`Deposit: ${L(v.deposit)}`,...(v.pay||[]).filter(p=>!p.del).map(p=>`Payment ${p.date}: ${L(p.amt)} (${p.method}) ${p.note||''}`),`Notes: ${v.notes||''}`].join('\n'),vs=allVisits();
+ return{json:JSON.stringify(cache),csv:'\uFEFF'+csvText(),
+  visitsCsv:'\uFEFF'+['Date,Client ID,Name,Visit,Style,Fabric,Pieces,Total'].concat(vs.map(x=>[x.d,x.c.id,x.c.name,x.n,x.s,x.f,x.p,x.t].map(q).join(','))).join('\n'),
+  clients:live.map(c=>{const vl=[...(c.visits||[]).filter(v=>!v.del),{...c,n:c.visit||1,date:c.vdate||(c.updated||'').slice(0,10)}],ids=[...new Set(vl.flatMap(v=>[...(v.ph?.style||[]),...(v.ph?.done||[])]))];
+   return{id:c.id,cid:c.id,name:c.name,photos:ids.map(i=>PHC[i]).filter(Boolean),visits:vl.map(v=>({k:v.n,date:v.date,text:vtxt(c,v)}))}})}}
+function drvErr(e){DRVERR=(e&&e.message)?e.message:String(e);const el=$('#drverr');if(el)el.textContent=DRVERR;toast('Drive: '+DRVERR)}
+const drvRefresh=()=>{const e=$('#drv');if(e)e.innerHTML=drvHTML()};
+function drvHTML(){const L=DRV.accounts();return`<h3>Google Drive backup</h3><label>Google Client ID (type or paste it here; it is saved in this browser only)</label><input id="gcid" value="${esc(DRV.clientId())}" placeholder="…apps.googleusercontent.com" autocomplete="off" onchange="DRV.setClientId(this.value);toast('Client ID saved')">
+<div class="row"><button class="btn2" onclick="$('#gcid').value='';DRV.setClientId('');toast('Client ID removed')">Clear Client ID</button></div>
+<div class="row"><button class="btn" onclick="drvAdd()">+ Add Drive account</button><button class="btn2" onclick="drvNow()">Back up now</button></div>
+<p id="drvst" class="muted">${esc(DRV.status()||'No backup has run yet.')}</p><p id="drverr" style="color:var(--red)">${esc(DRVERR)}</p>
+${L.map((a,i)=>`<div class="card"><b>${esc(a.email)}</b><br><small class="muted">${a.full?'⚠ Drive FULL · ':''}${a.lim?'Free space: '+DRV.gb(a.free)+' of '+DRV.gb(a.lim):'Free space: not reported'} · Last backup: ${a.at?new Date(a.at).toLocaleString():'never'}</small><div class="row"><button class="btn2" onclick="drvRestore(${i})">Restore</button><button class="btn2" onclick="drvRemove(${i})">Remove</button></div></div>`).join('')||'<p class="muted">No Drive account linked yet.</p>'}`}
+async function drvAdd(){try{DRVERR='';DRV.setClientId(($('#gcid')||{}).value);await DRV.add()}catch(e){drvErr(e)}}
+async function drvNow(){try{DRVERR='';DRV.setClientId(($('#gcid')||{}).value);if(!DRV.clientId())throw new Error('Paste the Google Client ID first.');if(!DRV.accounts().length)throw new Error('No Drive account linked yet. Tap + Add Drive account first.');await DRV.sync(1)}catch(e){drvErr(e)}}
+function drvRemove(i){if(confirm('Remove this Drive account from the app? Files already in Drive stay there.'))DRV.remove(i)}
+async function restoreText(t){const a=JSON.parse(t);if(!Array.isArray(a))throw new Error('This is not a Bosman backup file.');let n=0;for(const c of a)if(c.id&&c.name&&typeof c.updated==='string'){const o=cache.find(x=>x.id===c.id);if(!o||c.updated>o.updated){await put(c);n++}}cache=await all();list();toast(n+' clients restored');sync();return n}
+async function drvRestore(i){try{DRVERR='';if(!confirm('Restore clients from the latest backup in this Drive account? Newer clients on this phone are kept.'))return;await restoreText(await DRV.restore(i))}catch(e){drvErr(e)}}
+DRV.init({getData,onChange:drvRefresh,onStatus:t=>{const e=$('#drvst');if(e)e.textContent=t;if(/^Backed up to/.test(t))markBk('Google Drive')}});
+
 const csvText=()=>[KS.join(',')].concat(cache.filter(c=>!c.deleted).map(c=>KS.map(k=>'"'+String(c[k]??'').replace(/"/g,'""')+'"').join(','))).join('\n');
 
 /* ===== ITEMS, VISIT EDIT ===== */
@@ -355,23 +508,6 @@ function repCsv(){const r=['Name,ID,Billed,Paid,Owed'].concat(FRR.map(([c,b,p])=
 async function saveRec(){localStorage.bos_em=$('#rem').value.trim();localStorage.bos_wa=$('#rwa').value.trim();try{await db.collection('meta').doc('shop').set({teamEmails:localStorage.bos_em,teamWa:localStorage.bos_wa},{merge:true})}catch(_){}toast('Recipients saved');finRep()}
 async function ejs(subject,message){try{let c=JSON.parse(localStorage.bos_ejs||'null');if(!c){const s=prompt('EmailJS Service ID'),t=prompt('EmailJS Template ID (uses to_email, subject, message)'),k=prompt('EmailJS Public Key'),to=prompt('Send reports to (email)');if(!s||!t||!k||!to)return;c={s,t,k,to};localStorage.bos_ejs=JSON.stringify(c)}
  await lib('https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js');emailjs.init({publicKey:c.k});await emailjs.send(c.s,c.t,{to_email:c.to,subject,message});toast('Report emailed')}catch(x){toast('EmailJS: '+(x.text||x.message||x))}}
-/* ===== SEVERAL DRIVE ACCOUNTS ===== */
-const TOK={};let DA='';
-const ACC=()=>{try{return JSON.parse(localStorage.bos_dacc)||[]}catch(_){return[]}};
-function driveView(){shell(`<header><button onclick="home()">← Back</button><b>Google Drive</b></header><main>${ACC().map(e=>`<div class="card">${esc(e)}<button class="btn" onclick="driveBackup('${esc(e)}')">Back up now</button><button class="lnk" onclick="rmAcc('${esc(e)}')">Remove</button></div>`).join('')||'<p class="muted">No Drive account yet.</p>'}<button class="btn" onclick="addAcc()">Add Google account</button><p class="muted">Every account gets a full backup. After about an hour tap Back up now again to reconnect.</p></main>`)}
-function addAccDlg(){ovl(`<h3>Link a Google Drive account</h3><label style="color:#bbb">Google Client ID (paste here, ends with .apps.googleusercontent.com)</label><input id="gid" value="${esc(localStorage.bos_gid||'')}" placeholder="Paste your Google Client ID" autocomplete="off"><div class="row"><button class="btn2" onclick="$('#gid').value=''">Clear</button><button class="btn2" onclick="$('#ovl').remove()">Cancel</button></div><button class="btn" onclick="gidGo()">Save and sign in with Google</button><p style="color:#bbb;font-size:14px">Leave the saved ID as it is to keep using it. You will pick the Google account on the next screen and tick the Google Drive box.</p>`)}
-function gidGo(){const v=($('#gid').value||'').trim();if(!/^[\w-]+\.apps\.googleusercontent\.com$/.test(v))return toast('That does not look like a Client ID. It should end with .apps.googleusercontent.com');localStorage.bos_gid=v;$('#ovl').remove();home();addAcc()}
-function removeGid(){if(confirm('Remove the saved Google Client ID from this phone?')){localStorage.removeItem('bos_gid');home()}}
-async function addAcc(){try{toast('Opening Google sign-in…');const t=await driveToken(),hd={headers:{Authorization:'Bearer '+t}};let e='';
- try{e=((await(await fetch('https://www.googleapis.com/oauth2/v3/userinfo',hd)).json()).email||'').toLowerCase()}catch(_){}
- if(!e)try{e=((await(await fetch('https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)',hd)).json()).user?.emailAddress||'').toLowerCase()}catch(_){}
- if(!e)throw new Error('Could not read the account email. Make sure you ticked the Google Drive box.');
- TOK[e]={t,e:Date.now()+3.4e6};localStorage.bos_dacc=JSON.stringify([...new Set([...ACC(),e])]);home();toast('Linked '+e+'. Backing up…');await driveBackup(e);home()}catch(x){toast('Drive link failed: '+x.message)}}
-const DST=()=>{try{return JSON.parse(localStorage.bos_dst)||{}}catch(_){return{}}};
-const setDst=(e,ok,msg)=>{const s=DST();s[e]={t:Date.now(),ok,msg};localStorage.bos_dst=JSON.stringify(s)};
-function resetDrive(){if(!confirm('Reset Google Drive settings? This unlinks every Drive account on this phone. The next backup uploads everything again.'))return;Object.keys(localStorage).filter(k=>k.startsWith('bos_ds_')).forEach(k=>localStorage.removeItem(k));['bos_dacc','bos_dst','bos_gid'].forEach(k=>localStorage.removeItem(k));Object.keys(TOK).forEach(k=>delete TOK[k]);toast('Drive settings reset. Tap + Add Drive account.');home()}
-async function driveNow(){const a=ACC();if(!a.length)return toast('No Drive account linked yet. Tap + Add Drive account first.');for(let i=0;i<a.length;i++){toast(`Backing up ${i+1} of ${a.length}: ${a[i]}…`);await driveBackup(a[i])}home()}
-const rmAcc=e=>{localStorage.bos_dacc=JSON.stringify(ACC().filter(x=>x!==e));home()};
 /* ===== MANUAL IMPORT COLUMN MATCHING ===== */
 const IMP=['name','phone','email','addr','fabric','style','due','total','deposit','notes','dob','type'],AUTO={name:/name/i,phone:/phone|tel|mobile/i,email:/mail/i,addr:/addr/i,fabric:/fabric/i,style:/style/i,due:/collect|due/i,total:/total|amount|price/i,deposit:/deposit/i,notes:/note/i,dob:/birth|dob/i,type:/type|gender|sex/i};let IR=[];
 function importF(){const i=document.createElement('input');i.type='file';i.accept='.csv,.xlsx,.xls';i.onchange=async()=>{try{await lib(XL);const wb=XLSX.read(await i.files[0].arrayBuffer());IR=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});if(!IR.length)return toast('File is empty');const hs=Object.keys(IR[0]);
@@ -390,7 +526,7 @@ function visitReport(m){m=m||new Date().toISOString().slice(0,7);const v=allVisi
 function visitCsv(){const r=[['Date','Client ID','Name','Visit','Style','Fabric','Pieces','Total'].join(',')].concat(allVisits().map(x=>[x.d,x.c.id,x.c.name,x.n,x.s,x.f,x.p,x.t].map(y=>'"'+String(y??'').replace(/"/g,'""')+'"').join(',')));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+r.join('\n')],{type:'text/csv'}));a.download='All_Visits_in_order.csv';a.click()}
 const markBk=async t=>{localStorage.bos_lastbk=Date.now();try{await db.collection('meta').doc('shop').set({lastBackup:Date.now(),lastBackupBy:me.name,lastBackupType:t},{merge:true})}catch(_){}bkBanner()};
 async function pullBk(){try{const d=await db.collection('meta').doc('shop').get(),t=d.exists?+d.data().lastBackup||0:0;if(d.exists){const x=d.data();if(x.teamEmails)localStorage.bos_em=x.teamEmails;if(x.teamWa)localStorage.bos_wa=x.teamWa}if(t>(+localStorage.bos_lastbk||0))localStorage.bos_lastbk=t}catch(_){}bkBanner()}
-function bkBanner(){const e=$('#bk');if(!e)return;const t=+localStorage.bos_lastbk||0;e.style.display=adm()&&Date.now()-t>6048e5?'block':'none';e.textContent=ACC().length?'⚠ Backup due: tap Drive backup, or use Export → Full backup.':'⚠ Backup due: link Google Drive below, or use Export → Full backup.'}
+function bkBanner(){const e=$('#bk');if(!e)return;const t=+localStorage.bos_lastbk||0;e.style.display=adm()&&Date.now()-t>6048e5?'block':'none';e.textContent=DRV.accounts().length?'⚠ Backup due: tap Drive backup, or use Export → Full backup.':'⚠ Backup due: link Google Drive below, or use Export → Full backup.'}
 
 /* ===== STAFF APPROVALS, STAFF CORNER, HR PICTURES, DELETE PASSWORD ===== */
 let EDITOK=true;
